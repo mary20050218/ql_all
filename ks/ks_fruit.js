@@ -7,18 +7,18 @@
 =================================Quantumultx=========================
 [task_local]
 #快手极速版-快手果园
-0 55 8-22 * * * https://github.com/JDWXX/jd_job/blob/master/ks/ks_fruit.js, tag=快手极速版-快手果园, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/jd.png, enabled=true
+0 55 8-22 * * * https://github.com/mary20050218/ql_all/edit/master/ks/ks_fruit.js, tag=快手极速版-快手果园, img-url=https://raw.githubusercontent.com/Orz-3/mini/master/Color/jd.png, enabled=true
 =================================Loon===================================
 [Script]
-cron "20 1,8,12,17 * * * script-path=https://github.com/JDWXX/jd_job/blob/master/ks/ks_fruit.js,tag=快手极速版-快手果园
+cron "20 1,8,12,17 * * * script-path=https://github.com/mary20050218/ql_all/edit/master/ks/ks_fruit.js,tag=快手极速版-快手果园
 ===================================Surge================================
-快手极速版-快手果园 = type=cron,cronexp="20 1,8,12,17 * * *,wake-system=1,timeout=3600,script-path=https://github.com/JDWXX/jd_job/blob/master/ks/ks_fruit.js
+快手极速版-快手果园 = type=cron,cronexp="20 1,8,12,17 * * *,wake-system=1,timeout=3600,script-path=https://github.com/mary20050218/ql_all/edit/master/ks/ks_fruit.js
 ====================================小火箭=============================
-快手极速版-快手果园 = type=cron,script-path=https://github.com/JDWXX/jd_job/blob/master/ks/ks_fruit.js, cronexpr="20 1,8,12,17 * * *, timeout=3600, enable=true
+快手极速版-快手果园 = type=cron,script-path=https://github.com/mary20050218/ql_all/edit/master/ks/ks_fruit.js, cronexpr="20 1,8,12,17 * * *, timeout=3600, enable=true
  */
 let cookies = [];
 let CookieJDs = [
-    '',//账号一ck,例:kuaishou.api_st=xxxxx;
+    'kuaishou.api_st=Cg9rdWFpc2hvdS5hcGkuc3QSsAHNewRxHSrgVO62vOH88fPPs2CG0Y2PEruNHHLVg-gVWhGfxRo9mwNdbt5SsXLoQBLZGId3cCvoBGtatwqIEEIVpxg3NapNChat00lFIn9zbFf714bBRx-9eeyBp2uo3b-_zvzRy0MAcnGE6LNfQK9M0mx56wKjPf7p7hFOmfzaY9I_I6ZB2PcYptdC_cETuGtaqUzTgIe7h8bGxBq3ai3YbLkGYmiwuOqBmC2yph9diRoSbxR66yrJQAiioIRxOzZQg_mIIiC0YwtZp2voSGFYvrAOHdCHXURJ1vWL0ffdgva40BGozSgFMAE;',//账号一ck,例:kuaishou.api_st=xxxxx;
     '',//账号二ck,例:kuaishou.api_st=xxxxx;
 ]
 // 判断环境变量里面是否有快手ck
