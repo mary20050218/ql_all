@@ -99,12 +99,12 @@ function postForm(path, body) {
       },
       body: body
     }, (err, resp, data) => {
-      if (err) return resolve({ ok: false, msg: "请求失败" });
+      if (err) return resolve({ ok: false, msg: "请求失败", text: "" });
       try {
         const r = JSON.parse(data);
-        resolve({ ok: r.status == 1, msg: r.message || "", data: r.data, raw: r });
+        resolve({ ok: r.status == 1, msg: r.message || "", data: r.data, raw: r, text: String(data).slice(0, 200) });
       } catch (e) {
-        resolve({ ok: false, msg: "返回解析失败" });
+        resolve({ ok: false, msg: "返回解析失败", text: String(data).slice(0, 200) });
       }
     });
   });
@@ -138,7 +138,8 @@ async function getArticleList(auth) {
       const a = arts[Math.floor(Math.random() * arts.length)];
       await randWait();
       const r = await postForm("/WebApi/ShareNew/getShareArticleReward", auth + "&article_id=" + a.id);
-      const tip = r.ok ? "成功" : "失败" + (r.msg ? "(" + r.msg + ")" : "");
+      const detail = r.ok ? "" : (r.msg ? "(" + r.msg + ")" : "(返回:" + (r.text || "空") + ")");
+      const tip = r.ok ? "成功" : "失败" + detail;
       $.log(`分享领奖 ${i + 1}/${SHARE_TIMES}《${a.title}》: ${tip}`);
       logs.push(`分享《${String(a.title).slice(0, 14)}》: ${tip}`);
     }
@@ -149,7 +150,8 @@ async function getArticleList(auth) {
   if (slot) {
     await randWait();
     const r = await postForm("/WebApi/ShareNew/execExtractTask", auth + "&action=beread_extra_reward_" + slot);
-    const tip = r.ok ? "成功" : "失败" + (r.msg ? "(" + r.msg + ")" : "");
+    const detail = r.ok ? "" : (r.msg ? "(" + r.msg + ")" : "(返回:" + (r.text || "空") + ")");
+    const tip = r.ok ? "成功" : "失败" + detail;
     $.log(`时段奖励(${slot}): ${tip}`);
     logs.push(`时段奖励: ${tip}`);
   } else {
