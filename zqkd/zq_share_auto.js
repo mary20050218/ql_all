@@ -58,7 +58,9 @@ function getBody() {
   }
   // 选第一个包含 zqkey= 的有效请求体
   for (const [src, val] of cands) {
-    const lines = String(val).split("\n").map(s => s.trim()).filter(Boolean);
+    const s = String(val);
+    $.log(`候选来源 ${src}: 长度${s.length}, 含zqkey=${s.indexOf("zqkey=") !== -1}`);
+    const lines = s.split("\n").map(x => x.trim()).filter(Boolean);
     const body = lines[0] || "";
     if (body.indexOf("zqkey=") !== -1) {
       if (lines.length > 1) $.log(`检测到 ${lines.length} 个请求体，只使用第 1 个`);
