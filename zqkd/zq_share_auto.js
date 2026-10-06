@@ -22,6 +22,42 @@ const DELAY_MIN = 3000;                 // 请求间最小延迟（毫秒）
 const DELAY_MAX = 8000;                 // 请求间最大延迟（毫秒）
 const API_HOST = "https://kandian.wkandian.com";
 
+// 简单哈希（只用于判断值是否相同，不输出原值）
+function hashStr(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+// 嗅探 p 参数格式（只输出结构，不输出值）
+function sniffP(pval) {
+  try {
+    const d = decodeURIComponent(pval);
+    let b64 = d.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const bin = atob(b64);
+    for (let i = 0; i < Math.min(bin.length, 200); i++) {
+      const c = bin.charCodeAt(i);
+      if (c < 9 || (c > 13 && c < 32) || c > 126) return "p为加密二进制不可读";
+    }
+    try {
+      const o = JSON.parse(bin);
+      return "p解码后JSON, 键[" + Object.keys(o).slice(0, 15).join(",") + "]";
+    } catch (e) { return "p解码后可读但非JSON"; }
+  } catch (e) { return "p无法base64解码"; }
+}
+// 诊断多行捕获的 p 值稳定性
+function diagP(lines, src) {
+  if (lines.length < 2) return;
+  const hs = {}, n = Math.min(lines.length, 40);
+  for (let i = 0; i < n; i++) {
+    const pv = String(lines[i]).split("=").slice(1).join("=");
+    if (pv) hs[hashStr(pv)] = 1;
+  }
+  $.log(`[${src}] ${n}条捕获中 p 值去重后 ${Object.keys(hs).length} 种`);
+  const firstP = String(lines[0]).split("=").slice(1).join("=");
+  if (firstP) $.log(`[${src}] ${sniffP(firstP)}`);
+}
+
 // 只提取参数名（不含值），用于诊断请求体格式
 function paramNames(s) {
   s = String(s).trim();
@@ -42,13 +78,19 @@ function getBody() {
   } else {
     // 1) Youth_Read.js 抓的请求体
     const ya = $.getdata("youth_autoread") || $.getdata("zqgetbody_body") || "";
-    if (ya) cands.push(["youth_autoread", ya]);
+    if (ya) {
+      cands.push(["youth_autoread", ya]);
+      const yaLines = String(ya).split("\n").map(x => x.trim()).filter(Boolean);
+      diagP(yaLines, "youth_autoread");
+    }
     // 2) BoxJs read_zq（URL 编码的 article/complete 请求体）
     const rz = $.getdata("read_zq") || "";
     if (rz) {
       let dec = rz;
       try { dec = decodeURIComponent(rz); } catch (e) {}
       cands.push(["read_zq", dec]);
+      const rzLines = String(dec).split("\n").map(x => x.trim()).filter(Boolean);
+      diagP(rzLines, "read_zq");
     }
     // 3) BoxJs youthheader_zq（请求头 JSON 或 cookie= 格式）
     const yh = $.getdata("youthheader_zq") || "";
