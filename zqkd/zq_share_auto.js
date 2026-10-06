@@ -22,6 +22,18 @@ const DELAY_MIN = 3000;                 // 请求间最小延迟（毫秒）
 const DELAY_MAX = 8000;                 // 请求间最大延迟（毫秒）
 const API_HOST = "https://kandian.wkandian.com";
 
+// 只提取参数名（不含值），用于诊断请求体格式
+function paramNames(s) {
+  s = String(s).trim();
+  if (s.startsWith("{")) return "JSON格式";
+  const names = [], seen = {};
+  s.split(/[&\n]/).forEach(p => {
+    const k = p.split("=")[0].trim();
+    if (k && !seen[k] && k.length < 40) { seen[k] = 1; names.push(k); }
+  });
+  return names.slice(0, 25).join(",") || "无参数";
+}
+
 // ---------- 读取请求体（按顺序尝试多个来源） ----------
 function getBody() {
   const cands = [];  // [来源名, 请求体]
@@ -59,7 +71,7 @@ function getBody() {
   // 选第一个包含 zqkey= 的有效请求体
   for (const [src, val] of cands) {
     const s = String(val);
-    $.log(`候选来源 ${src}: 长度${s.length}, 含zqkey=${s.indexOf("zqkey=") !== -1}`);
+    $.log(`候选来源 ${src}: 长度${s.length}, 参数[${paramNames(s.split("\n")[0])}]`);
     const lines = s.split("\n").map(x => x.trim()).filter(Boolean);
     const body = lines[0] || "";
     if (body.indexOf("zqkey=") !== -1) {
