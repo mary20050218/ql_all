@@ -1,8 +1,10 @@
 /*
 中青看点自动分享领奖（定时任务版）
 ================================================
-• 复用 Youth_Read.js 的请求体，无需重新抓包：
-  QuanX / Surge / Loon -> 存储键 youth_autoread（或 zqgetbody_body）
+• 复用请求体（按顺序自动尝试，无需重新抓包）：
+  QuanX / Surge / Loon -> youth_autoread（或 zqgetbody_body）
+                        -> BoxJs read_zq（URL 编码的 article/complete 请求体）
+                        -> BoxJs youthheader_zq（请求头里的 cookie）
   Node / GitHub Actions -> 环境变量 YOUTH_READ
 • 每次只做 3 次分享领奖 + 1 次时段额外奖励，请求间随机延迟 3~8 秒
 • 定时建议（对应 5-10 / 11-16 / 17-22 三个奖励时段）：
@@ -20,14 +22,52 @@ const DELAY_MIN = 3000;                 // 请求间最小延迟（毫秒）
 const DELAY_MAX = 8000;                 // 请求间最大延迟（毫秒）
 const API_HOST = "https://kandian.wkandian.com";
 
-// ---------- 读取请求体（复用 Youth_Read.js 的存储） ----------
+// ---------- 读取请求体（按顺序尝试多个来源） ----------
 function getBody() {
-  const raw = $.isNode()
-    ? (process.env.YOUTH_READ || "")
-    : ($.getdata("youth_autoread") || $.getdata("zqgetbody_body") || "");
-  const lines = String(raw).split("\n").map(s => s.trim()).filter(Boolean);
-  if (lines.length > 1) $.log(`检测到 ${lines.length} 个请求体，只使用第 1 个`);
-  return lines[0] || "";
+  const cands = [];  // [来源名, 请求体]
+  if ($.isNode()) {
+    if (process.env.YOUTH_READ) cands.push(["YOUTH_READ", process.env.YOUTH_READ]);
+  } else {
+    // 1) Youth_Read.js 抓的请求体
+    const ya = $.getdata("youth_autoread") || $.getdata("zqgetbody_body") || "";
+    if (ya) cands.push(["youth_autoread", ya]);
+    // 2) BoxJs read_zq（URL 编码的 article/complete 请求体）
+    const rz = $.getdata("read_zq") || "";
+    if (rz) {
+      let dec = rz;
+      try { dec = decodeURIComponent(rz); } catch (e) {}
+      cands.push(["read_zq", dec]);
+    }
+    // 3) BoxJs youthheader_zq（请求头 JSON 或 cookie= 格式）
+    const yh = $.getdata("youthheader_zq") || "";
+    if (yh) {
+      let ck = "";
+      let m = yh.match(/cookie=([^&"\s}]+)/);
+      if (m) {
+        ck = m[1];
+      } else {
+        try {
+          const h = JSON.parse(yh);
+          const c = String(h.Cookie || h.cookie || "");
+          m = c.match(/zqkey=([^;]+)/) || c.match(/cookie=([^;]+)/);
+          if (m) ck = m[1];
+        } catch (e) {}
+      }
+      if (ck) cands.push(["youthheader_zq", "zqkey=" + ck]);
+    }
+  }
+  // 选第一个包含 zqkey= 的有效请求体
+  for (const [src, val] of cands) {
+    const lines = String(val).split("\n").map(s => s.trim()).filter(Boolean);
+    const body = lines[0] || "";
+    if (body.indexOf("zqkey=") !== -1) {
+      if (lines.length > 1) $.log(`检测到 ${lines.length} 个请求体，只使用第 1 个`);
+      $.log(`使用请求体来源: ${src}`);
+      return body;
+    }
+  }
+  if (cands.length) $.log(`找到 ${cands.length} 个候选来源，但都不含 zqkey=`);
+  return "";
 }
 
 // ---------- 由请求体拼出分享接口需要的认证参数（沿用 zq_share.js 的拼法） ----------
@@ -81,7 +121,7 @@ async function getArticleList(auth) {
 !(async () => {
   const body = getBody();
   if (!body || body.indexOf("zqkey=") === -1) {
-    $.msg($.name, "未找到有效的请求体", "请先运行 Youth_Read.js 获取 youth_autoread");
+    $.msg($.name, "未找到有效的请求体", "请检查 BoxJs 中的 read_zq / youthheader_zq 是否有效");
     return;
   }
   const auth = buildAuth(body);
