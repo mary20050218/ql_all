@@ -4,7 +4,7 @@
 • 复用 Youth_Read.js 的请求体，无需重新抓包：
   QuanX / Surge / Loon -> 存储键 youth_autoread（或 zqgetbody_body）
   Node / GitHub Actions -> 环境变量 YOUTH_READ
-• 每次只做 1 次分享领奖 + 1 次时段额外奖励，请求间随机延迟 3~8 秒
+• 每次只做 3 次分享领奖 + 1 次时段额外奖励，请求间随机延迟 3~8 秒
 • 定时建议（对应 5-10 / 11-16 / 17-22 三个奖励时段）：
   QuanX [task_local]
   30 6,12,18 * * * zq_share_auto.js, tag=中青自动分享, enabled=true
@@ -15,7 +15,7 @@
 const $ = new Env("中青看点自动分享");
 
 // ---------- 可调参数 ----------
-const SHARE_TIMES = 1;                  // 每次分享领奖次数（防黑号，建议保持 1）
+const SHARE_TIMES = 3;                  // 每次分享领奖次数（防黑号，默认 3）
 const DELAY_MIN = 3000;                 // 请求间最小延迟（毫秒）
 const DELAY_MAX = 8000;                 // 请求间最大延迟（毫秒）
 const API_HOST = "https://kandian.wkandian.com";
