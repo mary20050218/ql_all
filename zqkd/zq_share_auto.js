@@ -174,7 +174,52 @@ async function getArticleList(auth) {
     .map(it => ({ id: it.id, title: it.title || it.desc || String(it.id) }));
 }
 
+// 自定义 URL + 请求头的 POST（回放模式用）
+function postFull(url, body, headers) {
+  return new Promise((resolve) => {
+    const h = Object.assign({ "Content-Type": "application/x-www-form-urlencoded" }, headers || {});
+    $.post({ url, headers: h, body }, (err, resp, data) => {
+      if (err) return resolve({ ok: false, msg: "请求失败", text: "" });
+      try {
+        const r = JSON.parse(data);
+        resolve({ ok: r.status == 1, msg: r.message || r.msg || "", text: String(data).slice(0, 200) });
+      } catch (e) {
+        resolve({ ok: false, msg: "返回解析失败", text: String(data).slice(0, 200) });
+      }
+    });
+  });
+}
+
+// 回放模式：读取 grab_claim.js 抓到的真实分享请求（只记录结构，不输出值）
+function getReplay() {
+  if ($.isNode()) return null;
+  const url = $.getdata("zq_share_url") || "";
+  const body = $.getdata("zq_share_body") || "";
+  if (!body || url.indexOf("getShareArticleReward") === -1) return null;
+  let headers = {};
+  try { headers = JSON.parse($.getdata("zq_share_headers") || "{}"); } catch (e) {}
+  const clean = {};
+  Object.keys(headers).forEach(k => {
+    const lk = String(k).toLowerCase();
+    if (lk.charAt(0) === ":" || lk === "content-length" || lk === "host" || lk === "connection") return;
+    clean[k] = headers[k];
+  });
+  $.log(`回放请求: ${url.split("?")[0].split("/").pop()}, body参数[${paramNames(body)}], 请求头[${Object.keys(clean).join(",")}]`);
+  return { url, body, headers: clean };
+}
+
 !(async () => {
+  // 回放模式优先：用抓到的真实请求测试
+  const replay = getReplay();
+  if (replay) {
+    $.log("🔔中青看点自动分享，开始！（回放模式）");
+    const r = await postFull(replay.url, replay.body, replay.headers);
+    const tip = r.ok ? "成功" : "失败" + (r.msg ? "(" + r.msg + ")" : "(返回:" + (r.text || "空") + ")");
+    $.log(`回放分享领奖: ${tip}`);
+    $.msg($.name, "回放测试完成", `回放分享: ${tip}`);
+    return;
+  }
+
   const body = getBody();
   if (!body || body.indexOf("zqkey=") === -1) {
     $.msg($.name, "未找到有效的请求体", "请检查 BoxJs 中的 read_zq / youthheader_zq 是否有效");
